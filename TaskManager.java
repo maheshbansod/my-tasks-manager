@@ -2,6 +2,7 @@ import java.util.List;
 import java.util.ArrayList;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 
 public class TaskManager {
 	List<TaskCard> tasks;
@@ -21,7 +22,7 @@ public class TaskManager {
 		cpanel.setBackground(new Color(0,255,0));
 		frame.add(cpanel);
 		tasks = new ArrayList<TaskCard>();
-	tasks.add(new TaskCard(new Task("Test 1")));
+		tasks.add(new TaskCard(new Task("Test 1")));
 		tasks.add(new TaskCard(new Task("Test 2")));
 		Task t3 = new Task("Test 3");
 		t3.setPriority(Task.HIGH_PRIORITY);
@@ -48,12 +49,25 @@ public class TaskManager {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 
+	void addTask(String name) {
+		//TODO: disallow repeating task name
+		tasks.add(new TaskCard(new Task(name)));
+	}
+
+	Task getTask(String name) {
+		for(TaskCard t: tasks) {
+			if(t.task.getName().equals(name))
+				return t.task;
+		}
+		return null;
+	}
+
 	public static void main(String []args) {
 		new TaskManager();
 	}
 }
 
-class TaskCard extends JPanel{
+class TaskCard extends JPanel implements ActionListener {
 	JPanel leftpanel;
 	JPanel rightpanel;
 	JButton uparrow; //increase priority
@@ -62,19 +76,17 @@ class TaskCard extends JPanel{
 	JLabel taskname;
 	Task task;
 
+	final static int P_INC = 10;
+
 	TaskCard(Task task) {
 		this.task = task;
 
-		int p = task.getPriority();
-		p = (p>Task.HIGH_PRIORITY)?Task.HIGH_PRIORITY:p;
-		p = p*255/Task.HIGH_PRIORITY;
 		
 	/*	setBackground(new Color(255,0,0));*/
 		setBorder(BorderFactory.createLineBorder(Color.black));
 		setLayout(new GridLayout(1,2));
 		leftpanel = new JPanel();
 		leftpanel.setOpaque(true);
-		leftpanel.setBackground(new Color(p,255 - p,0)); //color on priority
 		leftpanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 		rightpanel = new JPanel();
 		rightpanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -89,6 +101,37 @@ class TaskCard extends JPanel{
 		rightpanel.add(deletebutton);
 		rightpanel.add(uparrow);
 		rightpanel.add(downarrow);
+
+		uparrow.addActionListener(this);
+		downarrow.addActionListener(this);
+
+		resetBG();
 	}
 
+	void resetBG() {
+		int p = task.getPriority();
+		int brightness = 0;
+		if(p>Task.HIGH_PRIORITY) {
+			brightness = Task.HIGH_PRIORITY-p; //-ve = darkness
+			p=Task.HIGH_PRIORITY;
+		} else if(p<0) {
+			brightness = -p;
+			p=0;
+		}
+		p = p*255/Task.HIGH_PRIORITY;
+		leftpanel.setBackground(new Color(
+					p+((brightness<0)?brightness:0),
+					255-p-((brightness>0)?brightness:0),
+					0)); //color on priority
+	}
+
+	public void actionPerformed(ActionEvent evt) {
+		if(evt.getSource().equals(uparrow)) {
+			task.setPriority(task.getPriority()+P_INC);
+			resetBG();
+		} else if(evt.getSource().equals(downarrow)) {
+			task.setPriority(task.getPriority()-P_INC);
+			resetBG();
+		}
+	}
 }
