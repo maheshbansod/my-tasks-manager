@@ -1,15 +1,18 @@
 import java.util.List;
 import java.util.ArrayList;
+import java.text.NumberFormat;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.*;
 
-public class TaskManager {
+public class TaskManager implements ActionListener, PropertyChangeListener {
 	List<TaskCard> tasks;
 	JFrame frame = new JFrame("My Tasks Manager");
 	JPanel panel = new JPanel(new GridBagLayout());
 	JPanel cpanel = new JPanel(new GridBagLayout());
 	JButton addtask = new JButton("Add task");
+	JButton refreshlist = new JButton("Refresh"); //repl with image
 
 	TaskManager() {
 		frame.setLayout(new FlowLayout());
@@ -18,6 +21,7 @@ public class TaskManager {
 
 		frame.add(panel);
 		frame.getContentPane().setBackground(new Color(0,0,255));
+		panel.setOpaque(false);
 		cpanel.setOpaque(true);
 		cpanel.setBackground(new Color(0,255,0));
 		frame.add(cpanel);
@@ -28,9 +32,42 @@ public class TaskManager {
 		t3.setPriority(Task.HIGH_PRIORITY);
 		Task t4 = new Task("Test 4");
 		t4.setPriority(Task.LOW_PRIORITY);
+		TaskCard tc4 = new TaskCard(t4);
+		tc4.addPropertyChangeListener("delete",this);
+
 		tasks.add(new TaskCard(t3));
-		tasks.add(new TaskCard(t4));
+		tasks.add(tc4);
+
+		reAddList();
 		
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridx = c.gridy = 0;
+		cpanel.add(addtask, c);
+		addtask.addActionListener(this);
+		c.gridy+=1;
+		cpanel.add(refreshlist, c);
+		refreshlist.addActionListener(this);
+
+		frame.pack();
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
+
+	public void propertyChange(PropertyChangeEvent evt) {
+		String propName = evt.getPropertyName();
+		if(propName.equals("delete")) {
+			TaskCard tc = (TaskCard)evt.getNewValue();
+			tasks.remove(tc);
+			reAddList();
+			frame.getContentPane().setBackground(new Color(0,0,255));
+		}
+	}
+
+	void reAddList() {
+		GridBagConstraints c = new GridBagConstraints();
+
+		panel.removeAll();
+
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.gridx = 0;
 		c.weightx = 1.0;
@@ -39,21 +76,56 @@ public class TaskManager {
 			panel.add(t,c);
 			c.gridy+=1;
 		}
-
-		c.fill = GridBagConstraints.HORIZONTAL;
-		c.gridx = c.gridy = 0;
-		cpanel.add(addtask, c);
-
-		frame.pack();
-		frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		panel.validate();
+		frame.validate();
 	}
 
-	void addTask(String name) {
-		//TODO: disallow repeating task name
-		tasks.add(new TaskCard(new Task(name)));
+	public void actionPerformed(ActionEvent evt) {
+		
+		if(evt.getSource().equals(refreshlist)) {
+			tasks.sort((t1,t2) -> t1.task.getPriority() - t2.task.getPriority());
+			reAddList();
+		} else if(evt.getSource().equals(addtask)) {
+			JFrame addframe = new JFrame("Add a task");
+			addframe.setLayout(new GridLayout(3,2));
+			JTextField tname = new JTextField(10);
+			JFormattedTextField tp = new JFormattedTextField(NumberFormat.getNumberInstance());
+			tp.setColumns(10);
+			tp.setValue(Task.MEDIUM_PRIORITY);
+			JButton confirm = new JButton("Add task");
+			addframe.add(new JLabel("Task Name"));
+			addframe.add(tname);
+			addframe.add(new JLabel("Task priority"));
+			addframe.add(tp);
+			addframe.add(new JPanel());
+			addframe.add(confirm);
+
+			confirm.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent evt) {
+					if(addTask(tname.getText(), Integer.parseInt(tp.getText()))) {
+						JOptionPane.showMessageDialog(frame, "Added task '"+tname.getText()+"'.");
+					} else {
+						JOptionPane.showMessageDialog(frame, "Couldn't add task. It probably already exists.", "Failure",JOptionPane.ERROR_MESSAGE);
+					}
+					addframe.dispose();
+				}
+			});
+			
+			addframe.pack();
+			addframe.setVisible(true);
+		}
 	}
 
+	boolean addTask(String name, int priority) {
+		for(TaskCard t: tasks) {
+			if(t.task.getName().equals(name))
+				return false;
+		}
+		tasks.add(new TaskCard(new Task(name, priority)));
+		reAddList();
+		return true;
+	}
+	
 	Task getTask(String name) {
 		for(TaskCard t: tasks) {
 			if(t.task.getName().equals(name))
@@ -104,6 +176,7 @@ class TaskCard extends JPanel implements ActionListener {
 
 		uparrow.addActionListener(this);
 		downarrow.addActionListener(this);
+		deletebutton.addActionListener(this);
 
 		resetBG();
 	}
@@ -132,6 +205,8 @@ class TaskCard extends JPanel implements ActionListener {
 		} else if(evt.getSource().equals(downarrow)) {
 			task.setPriority(task.getPriority()-P_INC);
 			resetBG();
+		} else if(evt.getSource().equals(deletebutton)) {
+			firePropertyChange("delete", null, this); //add confirmation
 		}
 	}
 }

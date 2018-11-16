@@ -12,6 +12,11 @@ public class Task {
 		priority = MEDIUM_PRIORITY;
 	}
 
+	Task(String name, int priority) {
+		this.name = name;
+		this.priority = priority;
+	}
+
 	void setPriority(int p) {
 		priority = p;
 	}
