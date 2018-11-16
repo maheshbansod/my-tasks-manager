@@ -5,6 +5,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.*;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
 
 public class TaskManager implements ActionListener, PropertyChangeListener {
 	List<TaskCard> tasks;
@@ -13,6 +19,9 @@ public class TaskManager implements ActionListener, PropertyChangeListener {
 	JPanel cpanel = new JPanel(new GridBagLayout());
 	JButton addtask = new JButton("Add task");
 	JButton refreshlist = new JButton("Refresh"); //repl with image
+	
+	
+	final String filename = "taskfile.dat";
 
 	TaskManager() {
 		frame.setLayout(new FlowLayout());
@@ -26,7 +35,8 @@ public class TaskManager implements ActionListener, PropertyChangeListener {
 		cpanel.setBackground(new Color(0,255,0));
 		frame.add(cpanel);
 		tasks = new ArrayList<TaskCard>();
-		tasks.add(new TaskCard(new Task("Test 1")));
+		populateList();
+		/*tasks.add(new TaskCard(new Task("Test 1")));
 		tasks.add(new TaskCard(new Task("Test 2")));
 		Task t3 = new Task("Test 3");
 		t3.setPriority(Task.HIGH_PRIORITY);
@@ -36,7 +46,7 @@ public class TaskManager implements ActionListener, PropertyChangeListener {
 		tc4.addPropertyChangeListener("delete",this);
 
 		tasks.add(new TaskCard(t3));
-		tasks.add(tc4);
+		tasks.add(tc4);*/
 
 		reAddList();
 		
@@ -63,7 +73,28 @@ public class TaskManager implements ActionListener, PropertyChangeListener {
 		}
 	}
 
+	void populateList() {
+		try {
+		ObjectInputStream infile = new ObjectInputStream(new FileInputStream(filename));
+		int n = infile.read();
+		for(int i=0;i<n;i++) {
+			TaskCard tc = new TaskCard((Task)infile.readObject());
+			tc.addPropertyChangeListener(this);
+			tasks.add(tc);
+		}
+		infile.close();
+		} catch(IOException e) {
+			e.printStackTrace();
+		} catch(ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
 	void reAddList() {
+		/* 
+		* Redraws the list to draw added or deleted stuff
+		* also saves the changes to a file
+		*/
 		GridBagConstraints c = new GridBagConstraints();
 
 		panel.removeAll();
@@ -78,12 +109,26 @@ public class TaskManager implements ActionListener, PropertyChangeListener {
 		}
 		panel.validate();
 		frame.validate();
+
+		//add to file
+		try {
+		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+		out.write(tasks.size());
+		for(TaskCard tc: tasks) {
+			out.writeObject(tc.task);
+		}
+		out.close();
+		} catch(IOException e) {
+			e.printStackTrace();
+		}/* catch(FileNotFoundException e) {
+			e.printStackTrace();
+		}*/
 	}
 
 	public void actionPerformed(ActionEvent evt) {
 		
 		if(evt.getSource().equals(refreshlist)) {
-			tasks.sort((t1,t2) -> t1.task.getPriority() - t2.task.getPriority());
+			tasks.sort((t1,t2) -> t2.task.getPriority() - t1.task.getPriority());
 			reAddList();
 		} else if(evt.getSource().equals(addtask)) {
 			JFrame addframe = new JFrame("Add a task");
