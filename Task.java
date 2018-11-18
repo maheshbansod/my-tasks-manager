@@ -4,9 +4,9 @@ public class Task implements Serializable {
 	private int priority;
 	private String name;
 
-	static final int HIGH_PRIORITY = 40;
-	static final int MEDIUM_PRIORITY = 25;
-	static final int LOW_PRIORITY = 10;
+	static final int HIGH_PRIORITY = 200;
+	static final int MEDIUM_PRIORITY = 100;
+	static final int LOW_PRIORITY = 0;
 
 	Task(String name) {
 		this.name = name;

@@ -230,17 +230,22 @@ class TaskCard extends JPanel implements ActionListener {
 		int p = task.getPriority();
 		int brightness = 0;
 		if(p>Task.HIGH_PRIORITY) {
-			brightness = Task.HIGH_PRIORITY-p; //-ve = darkness
+		//	brightness = Task.HIGH_PRIORITY-p; //-ve = darkness
 			p=Task.HIGH_PRIORITY;
 		} else if(p<0) {
-			brightness = -p;
+		//	brightness = -p;
 			p=0;
 		}
-		p = p*255/Task.HIGH_PRIORITY;
+		/*p = p*255/Task.HIGH_PRIORITY;
 		leftpanel.setBackground(new Color(
 					p+((brightness<0)?brightness:0),
 					255-p-((brightness>0)?brightness:0),
-					0)); //color on priority
+				0)); //color on priority*/
+		float hue =(float) ((120.0+(120.0*(p-Task.LOW_PRIORITY))/(Task.LOW_PRIORITY-Task.HIGH_PRIORITY))/360.0);
+		leftpanel.setBackground(Color.getHSBColor(
+				hue,
+				1.0f,
+				1.0f));
 	}
 
 	public void actionPerformed(ActionEvent evt) {
